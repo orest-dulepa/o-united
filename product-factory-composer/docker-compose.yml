@@ -1,0 +1,66 @@
+version: '3.7'
+
+services:
+
+  proxy-frontend:
+    build:
+      context: ./
+      dockerfile: docker-compose/proxy/Dockerfile
+    networks:
+      - edge
+    ports:
+      - "8080:8080"
+      - "8001:8001"
+
+  backend:
+    build:
+      context: ./
+      dockerfile: docker-compose/backend/Dockerfile
+    ports:
+      - 8000:8000
+    volumes:
+      - ./backend:/app
+    depends_on:
+      - postgres
+    networks:
+      - edge
+      - envoymesh
+    env_file:
+      - backend/.env
+
+  frontend:
+#    user: 1000:1000
+    build:
+      context: ./
+      dockerfile: ./docker-compose/frontend/Dockerfile
+    ports:
+      - 3000:3000
+    networks:
+      - edge
+      - envoymesh
+    volumes:
+      - ./frontend:/app
+    stdin_open: true
+
+  postgres:
+    image: postgres:12.0-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - 5433:5432
+    environment:
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: mypass
+      POSTGRES_DB: ou_db
+      POSTGRES_HOST: postgres
+    networks:
+      - envoymesh
+
+volumes:
+  postgres_data:
+
+networks:
+  edge:
+    name: edge
+  envoymesh:
+    name: envoymesh
